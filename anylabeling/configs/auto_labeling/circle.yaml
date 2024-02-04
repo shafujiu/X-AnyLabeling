@@ -1,0 +1,8 @@
+type: yolov8
+name: circle-0202
+display_name: 3C circle
+model_path: anylabeling/configs/auto_labeling/circle.onnx
+nms_threshold: 0.45
+confidence_threshold: 0.25
+classes:
+  - circle
