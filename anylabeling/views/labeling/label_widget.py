@@ -833,6 +833,13 @@ class LabelingWidget(LabelDialog):
             icon="format_yolo",
             tip=self.tr("Export Custom YOLO Annotations"),
         )
+        export_yolo_annotation_optimize = action(
+            self.tr("&Export YOLO Annotations Optimize"),
+            self.export_yolo_annotation_optimized,
+            None,
+            icon="format_yolo",
+            tip=self.tr("Export Custom YOLO Annotations Optimize"),
+        )
         export_voc_annotation = action(
             self.tr("&Export VOC Annotations"),
             self.export_voc_annotation,
@@ -963,6 +970,7 @@ class LabelingWidget(LabelDialog):
             upload_mask_annotation=upload_mask_annotation,
             upload_mot_annotation=upload_mot_annotation,
             export_yolo_annotation=export_yolo_annotation,
+            export_yolo_annotation_optimize=export_yolo_annotation,
             export_voc_annotation=export_voc_annotation,
             export_coco_annotation=export_coco_annotation,
             export_dota_annotation=export_dota_annotation,
@@ -1124,6 +1132,7 @@ class LabelingWidget(LabelDialog):
             self.menus.export,
             (
                 export_yolo_annotation,
+                export_yolo_annotation_optimize,
                 export_voc_annotation,
                 export_coco_annotation,
                 export_dota_annotation,
@@ -3617,6 +3626,77 @@ class LabelingWidget(LabelDialog):
                 else:
                     src_file = osp.join(label_dir_path, label_file_name)
                     converter.custom_to_yolo(src_file, dst_file)
+            QtWidgets.QMessageBox.information(
+                self,
+                self.tr("Success"),
+                self.tr(
+                    f"Annotation exported successfully!\n"
+                    f"Check the results in: {save_path}."
+                ),
+                QtWidgets.QMessageBox.Ok,
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Error"),
+                self.tr(f"{e}"),
+                QtWidgets.QMessageBox.Ok,
+            )
+            return
+
+
+ # Export
+    def export_yolo_annotation_optimized(self, _value=False, dirpath=None):
+        if not self.may_continue():
+            return
+
+        if not self.filename:
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Warning"),
+                self.tr("Please load an image folder before proceeding!"),
+                QtWidgets.QMessageBox.Ok,
+            )
+            return
+
+        if not self.classes_file:
+            filter = "Classes Files (*.txt);;All Files (*)"
+            self.classes_file, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                self.tr("Select a specific classes file"),
+                "",
+                filter,
+            )
+            if not self.classes_file:
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    self.tr("Warning"),
+                    self.tr("Please select a specific classes file!"),
+                    QtWidgets.QMessageBox.Ok,
+                )
+                return
+
+        label_dir_path = osp.dirname(self.filename)
+        if self.output_dir:
+            label_dir_path = self.output_dir
+        image_list = self.image_list
+        if not image_list:
+            image_list = [self.filename]
+        save_path = osp.realpath(osp.join(label_dir_path, "..", "labels"))
+        os.makedirs(save_path, exist_ok=True)
+        converter = LabelConverter(classes_file=self.classes_file)
+        label_file_list = os.listdir(label_dir_path)
+        try:
+            for image_file in image_list:
+                image_file_name = osp.basename(image_file)
+                label_file_name = osp.splitext(image_file_name)[0] + ".json"
+                dst_file_name = osp.splitext(image_file_name)[0] + ".txt"
+                dst_file = osp.join(save_path, dst_file_name)
+                if label_file_name not in label_file_list:
+                    pathlib.Path(dst_file).touch()
+                else:
+                    src_file = osp.join(label_dir_path, label_file_name)
+                    converter.custom_to_yolo_square(src_file, dst_file)
             QtWidgets.QMessageBox.information(
                 self,
                 self.tr("Success"),

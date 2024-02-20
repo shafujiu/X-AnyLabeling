@@ -536,6 +536,71 @@ class LabelConverter:
                         f"{class_index} {x0} {y0} {x1} {y1} {x2} {y2} {x3} {y3}\n"
                     )
 
+    def custom_to_yolo_square(self, input_file, output_file):
+            with open(input_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            image_width = data["imageWidth"]
+            image_height = data["imageHeight"]
+            image_size = np.array([[image_width, image_height]])
+
+            with open(output_file, "w", encoding="utf-8") as f:
+                for shape in data["shapes"]:
+                    shape_type = shape["shape_type"]
+                    if shape_type == "rectangle":
+                        label = shape["label"]
+                        points = shape["points"]
+                        if len(points) == 2:
+                            logger.warning(
+                                "UserWarning: Diagonal vertex mode is deprecated in X-AnyLabeling release v2.2.0 or later.\n"
+                                "Please update your code to accommodate the new four-point mode."
+                            )
+                            points = rectangle_from_diagonal(points)
+
+                        class_index = self.classes.index(label)
+
+                        x_center = (points[0][0] + points[2][0]) / (
+                            2 * image_width
+                        )
+                        y_center = (points[0][1] + points[2][1]) / (
+                            2 * image_height
+                        )
+                        width = abs(points[2][0] - points[0][0]) / image_width
+                        height = abs(points[2][1] - points[0][1]) / image_height
+                        length = max(width, height)
+                        f.write(
+                            f"{class_index} {x_center} {y_center} {length} {length}\n"
+                        )
+                    elif shape_type == "polygon":
+                        label = shape["label"]
+                        points = np.array(shape["points"])
+                        class_index = self.classes.index(label)
+                        norm_points = points / image_size
+                        f.write(
+                            f"{class_index} "
+                            + " ".join(
+                                [
+                                    " ".join([str(cell[0]), str(cell[1])])
+                                    for cell in norm_points.tolist()
+                                ]
+                            )
+                            + "\n"
+                        )
+                    elif shape_type == "rotation":
+                        label = shape["label"]
+                        points = list(chain.from_iterable(shape["points"]))
+                        normalized_coords = [
+                            points[i] / image_width
+                            if i % 2 == 0
+                            else points[i] / image_height
+                            for i in range(8)
+                        ]
+                        x0, y0, x1, y1, x2, y2, x3, y3 = normalized_coords
+                        class_index = self.classes.index(label)
+                        f.write(
+                            f"{class_index} {x0} {y0} {x1} {y1} {x2} {y2} {x3} {y3}\n"
+                        )
+
     def custom_to_voc(self, input_file, output_dir):
         with open(input_file, "r", encoding="utf-8") as f:
             data = json.load(f)
