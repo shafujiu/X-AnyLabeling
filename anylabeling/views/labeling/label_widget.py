@@ -970,7 +970,7 @@ class LabelingWidget(LabelDialog):
             upload_mask_annotation=upload_mask_annotation,
             upload_mot_annotation=upload_mot_annotation,
             export_yolo_annotation=export_yolo_annotation,
-            export_yolo_annotation_optimize=export_yolo_annotation,
+            export_yolo_annotation_optimize=export_yolo_annotation_optimize,
             export_voc_annotation=export_voc_annotation,
             export_coco_annotation=export_coco_annotation,
             export_dota_annotation=export_dota_annotation,
