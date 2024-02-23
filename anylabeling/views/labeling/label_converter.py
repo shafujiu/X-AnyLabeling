@@ -567,9 +567,12 @@ class LabelConverter:
                         )
                         width = abs(points[2][0] - points[0][0]) / image_width
                         height = abs(points[2][1] - points[0][1]) / image_height
-                        length = max(width, height)
+                        if width > height:
+                            height = (width * image_width) / image_height
+                        else:
+                            width = (height * image_height) / image_width
                         f.write(
-                            f"{class_index} {x_center} {y_center} {length} {length}\n"
+                            f"{class_index} {x_center} {y_center} {width} {height}\n"
                         )
                     elif shape_type == "polygon":
                         label = shape["label"]
